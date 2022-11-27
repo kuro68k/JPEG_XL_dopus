@@ -1,6 +1,6 @@
 /* JPEG XL viewer plugin for Directory Opus 12
 * 
-* (C) 2022 Kuro68k and others (see libjxl-LICENCE.txt)
+* (C) 2022 Kuro68k and others (see LICENCE-libjxl)
 */
 
 #include <shlwapi.h>
