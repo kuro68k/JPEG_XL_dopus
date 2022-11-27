@@ -1,4 +1,7 @@
-//#include "pch.h"
+/* JPEG XL viewer plugin for Directory Opus 12
+* 
+* (C) 2022 Kuro68k and others (see libjxl-LICENCE.txt)
+*/
 
 #include <shlwapi.h>
 #include <Shlobj.h>
@@ -19,7 +22,8 @@
 #include "jxl/resizable_parallel_runner.h"
 #include "jxl/resizable_parallel_runner_cxx.h"
 
-#include "windows.h"
+#include <windows.h>
+#include <delayimp.h>
 
 #include "jpegxl.h"
 
@@ -28,6 +32,20 @@ static const GUID GUIDPlugin_jpegxl =
 { 0xfa959248, 0xab91, 0x4363, { 0x88, 0xb8, 0x5, 0x9c, 0x5d, 0x84, 0x88, 0x24 } };
 
 static HMODULE s_hDllModule = NULL;
+static HINSTANCE hJXLDLL = NULL;
+
+FARPROC WINAPI DelayLoadHook(unsigned dliNotify, PDelayLoadInfo pdli)
+{
+	//if the failure was failure to load the designated dll
+	if (dliNotify == dliFailLoadLib &&
+		pdli->dwLastError == ERROR_MOD_NOT_FOUND)
+	{
+		// try the other path were the DLL is likely to be
+		HMODULE lib = LoadLibrary(_T("Viewers\\libjxl.lld"));
+		return (FARPROC)lib;
+	}
+	return 0;
+}
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -46,20 +64,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     }
     return TRUE;
 }
-
-//BOOL DVP_InitEx(LPDVPINITEXDATA pInitExData)
-//{
-//	return TRUE;
-//}
-//
-//void DVP_Uninit(void)
-//{
-//}
-//
-//BOOL DVP_USBSafe(LPOPUSUSBSAFEDATA pUSBSafeData)
-//{
-//	return TRUE;
-//}
 
 bool LoadFile(LPTSTR filename, std::vector<uint8_t>* out) {
 	FILE* file = _wfopen(filename, _T("rb"));
@@ -95,11 +99,12 @@ bool LoadFile(LPTSTR filename, std::vector<uint8_t>* out) {
 
 // decode JPEG XL file
 bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
-	std::vector<float>* pixels, size_t* xsize,
-	size_t* ysize, std::vector<uint8_t>* icc_profile) {
+	std::vector<uint32_t>* pixels, size_t* xsize,
+	size_t* ysize, std::vector<uint8_t>* icc_profile)
+{
 	// Multi-threaded parallel runner.
 	auto runner = JxlResizableParallelRunnerMake(nullptr);
-
+	
 	auto dec = JxlDecoderMake(nullptr);
 	if (pixels != NULL)
 	{
@@ -121,14 +126,14 @@ bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 			return false;
 		}
 	}
-
+	
 	if (JXL_DEC_SUCCESS != JxlDecoderSetParallelRunner(dec.get(),
 		JxlResizableParallelRunner,
 		runner.get())) {
 		fprintf(stderr, "JxlDecoderSetParallelRunner failed\n");
 		return false;
 	}
-
+	
 	JxlBasicInfo info;
 	JxlPixelFormat format = { 4, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0 };
 
@@ -175,7 +180,8 @@ bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 				return false;
 			}
 		}
-		else if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
+		else if ((status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) && (pixels != NULL))
+		{
 			size_t buffer_size;
 			if (JXL_DEC_SUCCESS !=
 				JxlDecoderImageOutBufferSize(dec.get(), &format, &buffer_size)) {
@@ -226,10 +232,10 @@ BOOL DVP_IdentifyW(LPVIEWERPLUGININFO lpVPInfo)
 		lpVPInfo->dwVersionHigh = MAKELPARAM(0, 0);
 		lpVPInfo->dwVersionLow = MAKELPARAM(1, 0);
 
-		lstrcpyn(lpVPInfo->lpszHandleExts, _T(".jxl"), lpVPInfo->cchHandleExtsMax);
-		lstrcpyn(lpVPInfo->lpszName, _T("JPEG XL"), lpVPInfo->cchNameMax);
-		lstrcpyn(lpVPInfo->lpszDescription, TEXT("JPEG XL Viewer Plugin"), lpVPInfo->cchDescriptionMax);
-		lstrcpyn(lpVPInfo->lpszCopyright, TEXT("(c) Copyright 2022 Kuro68k"), lpVPInfo->cchCopyrightMax);
+		(void)lstrcpyn(lpVPInfo->lpszHandleExts, _T(".jxl"), lpVPInfo->cchHandleExtsMax);
+		(void)lstrcpyn(lpVPInfo->lpszName, _T("JPEG XL"), lpVPInfo->cchNameMax);
+		(void)lstrcpyn(lpVPInfo->lpszDescription, TEXT("JPEG XL Viewer Plugin"), lpVPInfo->cchDescriptionMax);
+		(void)lstrcpyn(lpVPInfo->lpszCopyright, TEXT("(c) Copyright 2022 Kuro68k"), lpVPInfo->cchCopyrightMax);
 
 		lpVPInfo->dwlMinFileSize = 100;
 		lpVPInfo->uiMajorFileType = DVPMajorType_Image;
@@ -241,17 +247,17 @@ BOOL DVP_IdentifyW(LPVIEWERPLUGININFO lpVPInfo)
 }
 
 // Identify a local disk-based file
-BOOL DVP_IdentifyFileW(HWND hWnd, LPTSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPFileInfo, HANDLE hAbortEvent)
+BOOL DVP_IdentifyFileW(HWND hWnd, LPWSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPFileInfo, HANDLE hAbortEvent)
 {
 	std::vector<uint8_t> jxl;
 	if (!LoadFile(lpszName, &jxl)) {
-		fprintf(stderr, "couldn't load %s\n", lpszName);
+		fwprintf(stderr, _T("couldn't load %s\n"), lpszName);
 		return FALSE;
 	}
 
 	size_t xsize = 0, ysize = 0;
 	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), NULL, &xsize, &ysize, NULL)) {
-		fprintf(stderr, "Error while decoding the jxl file\n");
+		fwprintf(stderr, _T("Error while decoding the jxl file\n"));
 		return 1;
 	}
 
@@ -268,20 +274,20 @@ BOOL DVP_IdentifyFileW(HWND hWnd, LPTSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPFi
 }
 
 // Create a bitmap from a disk-based TGA file
-HBITMAP DVP_LoadBitmapW(HWND hWnd, LPTSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPFileInfo, LPSIZE lpszDesiredSize, HANDLE hAbortEvent)
+HBITMAP DVP_LoadBitmapW(HWND hWnd, LPWSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPFileInfo, LPSIZE lpszDesiredSize, HANDLE hAbortEvent)
 {
 	std::vector<uint8_t> jxl;
 	if (!LoadFile(lpszName, &jxl)) {
-		fprintf(stderr, "couldn't load %s\n", lpszName);
+		fwprintf(stderr, _T("couldn't load %s\n"), lpszName);
 		return NULL;
 	}
 
-	std::vector<float> pixels;
+	std::vector<uint32_t> pixels;
 	std::vector<uint8_t> icc_profile;
 	size_t xsize = 0, ysize = 0;
 	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), &pixels, &xsize, &ysize, &icc_profile))
 	{
-		fprintf(stderr, "Error while decoding %s\n", lpszName);
+		fwprintf(stderr, _T("Error while decoding %s\n"), lpszName);
 		return NULL;
 	}
 
@@ -308,12 +314,23 @@ HBITMAP DVP_LoadBitmapW(HWND hWnd, LPTSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPF
 	dbmi.bmiColors->rgbReserved = 0;
 	void* bits = (void*)&(pixels);
 
-	// Create DIB
+	// convert RGBA to BGRA
+	size_t count = xsize * ysize;
+	uint8_t* p = (uint8_t*)pixels.data();
+	for (size_t i = 0; i < count; i++)
+	{
+		uint8_t r = *p;
+		uint8_t b = *(p+2);
+		*p = b;
+		*(p + 2) = r;
+		p += 4;
+	}
+
+	// create DIB
 	HDC hdc = ::GetDC(NULL);
-	//hBitmap = CreateDIBSection(hdc, &dbmi, DIB_RGB_COLORS, &bits, NULL, 0);
 	hBitmap = CreateDIBitmap(hdc, &bmih, CBM_INIT, pixels.data(), &dbmi, DIB_RGB_COLORS);
 	if (hBitmap == NULL) {
-		fprintf(stderr, "Error while creating DIB section\n");
+		fwprintf(stderr, _T("Error while creating DIB section\n"));
 		return NULL;
 	}
 	::ReleaseDC(NULL, hdc);
