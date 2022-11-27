@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opus_plugin name="JPEG XL">
+	<usb_safe safe="yes" />
+</opus_plugin>
