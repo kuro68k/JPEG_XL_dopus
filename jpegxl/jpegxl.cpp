@@ -232,7 +232,7 @@ BOOL DVP_IdentifyW(LPVIEWERPLUGININFO lpVPInfo)
 
 		// Version number (H.L.H.L)
 		lpVPInfo->dwVersionHigh = MAKELPARAM(0, 0);
-		lpVPInfo->dwVersionLow = MAKELPARAM(1, 0);
+		lpVPInfo->dwVersionLow = MAKELPARAM(2, 0);
 
 		(void)lstrcpyn(lpVPInfo->lpszHandleExts, _T(".jxl"), lpVPInfo->cchHandleExtsMax);
 		(void)lstrcpyn(lpVPInfo->lpszName, _T("JPEG XL"), lpVPInfo->cchNameMax);
