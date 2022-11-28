@@ -226,7 +226,9 @@ BOOL DVP_IdentifyW(LPVIEWERPLUGININFO lpVPInfo)
 {
 	if (lpVPInfo->cbSize >= sizeof(VIEWERPLUGININFO))
 	{
-		lpVPInfo->dwFlags = DVPFIF_ExtensionsOnly | DVPFIF_NeedRandomSeek;
+		lpVPInfo->dwFlags = DVPFIF_ExtensionsOnly |
+							DVPFIF_NeedRandomSeek |
+							DVPFIF_NoMultithreadThumbnails;
 
 		// Version number (H.L.H.L)
 		lpVPInfo->dwVersionHigh = MAKELPARAM(0, 0);
