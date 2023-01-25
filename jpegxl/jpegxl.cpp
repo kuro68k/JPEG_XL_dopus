@@ -110,7 +110,7 @@ bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 	{
 		if (JXL_DEC_SUCCESS !=
 			JxlDecoderSubscribeEvents(dec.get(), JXL_DEC_BASIC_INFO |
-				JXL_DEC_COLOR_ENCODING |
+				/* JXL_DEC_COLOR_ENCODING | */
 				JXL_DEC_FULL_IMAGE))
 		{
 			fprintf(stderr, "JxlDecoderSubscribeEvents failed\n");
@@ -162,7 +162,7 @@ bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 				runner.get(),
 				JxlResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
 		}
-		else if (status == JXL_DEC_COLOR_ENCODING) {
+/*		else if (status == JXL_DEC_COLOR_ENCODING) {
 			// Get the ICC color profile of the pixel data
 			size_t icc_size;
 			if (JXL_DEC_SUCCESS !=
@@ -179,7 +179,7 @@ bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 				fprintf(stderr, "JxlDecoderGetColorAsICCProfile failed\n");
 				return false;
 			}
-		}
+		} */
 		else if ((status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) && (pixels != NULL))
 		{
 			size_t buffer_size;
