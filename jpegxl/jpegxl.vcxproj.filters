@@ -30,6 +30,66 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jxl\cms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\cms_interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\codestream_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\color_encoding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\decode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\decode_cxx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\encode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\encode_cxx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\jxl_cms_export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\jxl_export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\jxl_threads_export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\memory_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\parallel_runner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\resizable_parallel_runner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\resizable_parallel_runner_cxx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\stats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\thread_parallel_runner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\thread_parallel_runner_cxx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jxl\version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jpegxl.cpp">
@@ -42,12 +102,31 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="lib\x64\libjxl.exp">
+    <Library Include="lib\x64\brotlicommon.lib">
       <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="lib\x64\libjxl.lib">
+    </Library>
+    <Library Include="lib\x64\brotlidec.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\brotlienc.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\hwy.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\jxl.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\jxl_cms.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\jxl_extras_codec.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\jxl_jni.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
+    <Library Include="lib\x64\jxl_threads.lib">
       <Filter>Resource Files</Filter>
     </Library>
   </ItemGroup>

@@ -34,19 +34,6 @@ static const GUID GUIDPlugin_jpegxl =
 static HMODULE s_hDllModule = NULL;
 static HINSTANCE hJXLDLL = NULL;
 
-FARPROC WINAPI DelayLoadHook(unsigned dliNotify, PDelayLoadInfo pdli)
-{
-	//if the failure was failure to load the designated dll
-	if (dliNotify == dliFailLoadLib &&
-		pdli->dwLastError == ERROR_MOD_NOT_FOUND)
-	{
-		// try the other path were the DLL is likely to be
-		HMODULE lib = LoadLibrary(_T("Viewers\\libjxl.lld"));
-		return (FARPROC)lib;
-	}
-	return 0;
-}
-
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -100,7 +87,8 @@ bool LoadFile(LPTSTR filename, std::vector<uint8_t>* out) {
 // decode JPEG XL file
 bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 	std::vector<uint32_t>* pixels, size_t* xsize,
-	size_t* ysize, std::vector<uint8_t>* icc_profile)
+	size_t* ysize, std::vector<uint8_t>* icc_profile,
+	bool thumbnail)
 {
 	// Multi-threaded parallel runner.
 	auto runner = JxlResizableParallelRunnerMake(nullptr);
@@ -158,9 +146,14 @@ bool DecodeJpegXlOneShot(const uint8_t* jxl, size_t size,
 			}
 			*xsize = info.xsize;
 			*ysize = info.ysize;
-			JxlResizableParallelRunnerSetThreads(
-				runner.get(),
-				JxlResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
+			if (!thumbnail)
+			{
+				JxlResizableParallelRunnerSetThreads(
+					runner.get(),
+					JxlResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
+			}
+			else
+				JxlResizableParallelRunnerSetThreads(runner.get(), 1);
 		}
 /*		else if (status == JXL_DEC_COLOR_ENCODING) {
 			// Get the ICC color profile of the pixel data
@@ -227,17 +220,17 @@ BOOL DVP_IdentifyW(LPVIEWERPLUGININFO lpVPInfo)
 	if (lpVPInfo->cbSize >= sizeof(VIEWERPLUGININFO))
 	{
 		lpVPInfo->dwFlags = DVPFIF_ExtensionsOnly |
-							DVPFIF_NeedRandomSeek |
-							DVPFIF_NoMultithreadThumbnails;
+							DVPFIF_NeedRandomSeek; /* |
+							DVPFIF_NoMultithreadThumbnails;*/
 
 		// Version number (H.L.H.L)
 		lpVPInfo->dwVersionHigh = MAKELPARAM(0, 0);
-		lpVPInfo->dwVersionLow = MAKELPARAM(2, 0);
+		lpVPInfo->dwVersionLow = MAKELPARAM(3, 0);
 
 		(void)lstrcpyn(lpVPInfo->lpszHandleExts, _T(".jxl"), lpVPInfo->cchHandleExtsMax);
 		(void)lstrcpyn(lpVPInfo->lpszName, _T("JPEG XL"), lpVPInfo->cchNameMax);
 		(void)lstrcpyn(lpVPInfo->lpszDescription, TEXT("JPEG XL Viewer Plugin"), lpVPInfo->cchDescriptionMax);
-		(void)lstrcpyn(lpVPInfo->lpszCopyright, TEXT("(c) Copyright 2022 Kuro68k"), lpVPInfo->cchCopyrightMax);
+		(void)lstrcpyn(lpVPInfo->lpszCopyright, TEXT("(c) Copyright 2024 Kuro68k"), lpVPInfo->cchCopyrightMax);
 
 		lpVPInfo->dwlMinFileSize = 100;
 		lpVPInfo->uiMajorFileType = DVPMajorType_Image;
@@ -258,7 +251,7 @@ BOOL DVP_IdentifyFileW(HWND hWnd, LPWSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPFi
 	}
 
 	size_t xsize = 0, ysize = 0;
-	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), NULL, &xsize, &ysize, NULL)) {
+	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), NULL, &xsize, &ysize, NULL, false)) {
 		fwprintf(stderr, _T("Error while decoding the jxl file\n"));
 		return 1;
 	}
@@ -287,7 +280,10 @@ HBITMAP DVP_LoadBitmapW(HWND hWnd, LPWSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPF
 	std::vector<uint32_t> pixels;
 	std::vector<uint8_t> icc_profile;
 	size_t xsize = 0, ysize = 0;
-	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), &pixels, &xsize, &ysize, &icc_profile))
+	bool thumbnail = false;
+	if ((lpszDesiredSize->cx <= 512) && (lpszDesiredSize->cy <= 512))
+		thumbnail = true;
+	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), &pixels, &xsize, &ysize, &icc_profile, thumbnail))
 	{
 		fwprintf(stderr, _T("Error while decoding %s\n"), lpszName);
 		return NULL;
