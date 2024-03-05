@@ -281,8 +281,8 @@ HBITMAP DVP_LoadBitmapW(HWND hWnd, LPWSTR lpszName, LPVIEWERPLUGINFILEINFO lpVPF
 	std::vector<uint8_t> icc_profile;
 	size_t xsize = 0, ysize = 0;
 	bool thumbnail = false;
-	if ((lpszDesiredSize->cx <= 512) && (lpszDesiredSize->cy <= 512))
-		thumbnail = true;
+	//if ((lpszDesiredSize->cx <= 512) && (lpszDesiredSize->cy <= 512))
+	//	thumbnail = true;
 	if (!DecodeJpegXlOneShot(jxl.data(), jxl.size(), &pixels, &xsize, &ysize, &icc_profile, thumbnail))
 	{
 		fwprintf(stderr, _T("Error while decoding %s\n"), lpszName);
